@@ -1,0 +1,27 @@
+version: "3.7"
+
+networks:
+  sboulder-crux-nuxt-net:
+    name: ${SBOULDER_CRUX_NUXT_NET}
+    driver: bridge
+
+services:
+  sboulder-crux-nuxt-serv:
+    container_name: ${SBOULDER_CRUX_NUXT_CONT}
+    image: ${SBOULDER_CRUX_NUXT_IMG}:${SBOULDER_CRUX_NUXT_IMG_TAG}
+    build:
+      context: "."
+      dockerfile: Dockerfile
+    environment:
+      - NUXT_HOST=${SBOULDER_CRUX_NUXT_HOST}
+      - NUXT_PORT=${SBOULDER_CRUX_NUXT_CONTAINER_PORT}
+    # command: "yarn run dev"
+    restart: ${SBOULDER_CRUX_NUXT_RESTART_POLICY}
+    ports:
+      - "${SBOULDER_CRUX_NUXT_HOST_PORT}:${SBOULDER_CRUX_NUXT_CONTAINER_PORT}"
+    volumes:
+      - "${SBOULDER_CRUX_NUXT_VOL}:/app"
+      - /app/node_modules
+    networks:
+      - ${SBOULDER_CRUX_NUXT_NET}
+ 
