@@ -1,0 +1,51 @@
+version: '3.7'
+
+networks:
+  sboulder-crux-nest-net:
+    name: ${SBOULDER_CRUX_NEST_NET}
+volumes:
+  pgdata:
+
+services:
+  sboulder-crux-nest-serv:
+    container_name: ${SBOULDER_CRUX_NEST_CONT}
+    image: ${SBOULDER_CRUX_NEST_IMG}:${SBOULDER_CRUX_NEST_IMG_TAG}
+    user: node
+    build:
+      context: .
+      target: development
+      dockerfile: Dockerfile
+    command: npm run start:dev
+    restart: ${SBOULDER_CRUX_NEST_RESTART_POLICY}
+    ports:
+      - ${SBOULDER_CRUX_NEST_HOST_PORT}:${SBOULDER_CRUX_NEST_CONTAINER_PORT}
+      - ${SBOULDER_CRUX_NEST_DEBUG_HOST_PORT}:${SBOULDER_CRUX_NEST_DEBUG_CONTAINER_PORT}
+    volumes:
+      - ${SBOULDER_CRUX_NEST_VOL}:/app
+      - /app/node_modules
+    networks:
+      - ${SBOULDER_CRUX_NEST_NET}
+    depends_on:
+      - ${SBOULDER_CRUX_REDIS_SERV}
+      - ${SBOULDER_CRUX_PG_SERV}
+
+  sboulder-crux-redis-serv:
+    container_name: ${SBOULDER_CRUX_REDIS_CONT}
+    image: ${SBOULDER_CRUX_REDIS_IMG}:${SBOULDER_CRUX_REDIS_IMG_TAG}
+    networks:
+      - ${SBOULDER_CRUX_NEST_NET}
+
+  sboulder-crux-postgres-serv:
+    container_name: ${SBOULDER_CRUX_POSTGRES_CONT}
+    image: ${SBOULDER_CRUX_POSTGRES_IMG}:${SBOULDER_CRUX_POSTGRES_IMG_TAG}
+    environment:
+      POSTGRES_PASSWORD: ${SBOULDER_CRUX_POSTGRES_PWD}
+      POSTGRES_USER: ${SBOULDER_CRUX_POSTGRES_USR}
+      POSTGRES_DB: ${SBOULDER_CRUX_POSTGRES_DB}
+      PG_DATA: ${SBOULDER_CRUX_POSTGRES_VOL_CONT}
+    ports:
+      - ${SBOULDER_CRUX_POSTGRES_HOST_PORT}:${SBOULDER_CRUX_POSTGRES_CONTAINER_PORT}
+    volumes:
+      - ${SBOULDER_CRUX_POSTGRES_VOL}:${SBOULDER_CRUX_POSTGRES_VOL_CONT}
+    networks:
+      - ${SBOULDER_CRUX_NEST_NET}
