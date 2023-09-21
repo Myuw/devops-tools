@@ -1,0 +1,67 @@
+version: "3.9"
+services:
+  # SOURCE : https://hub.docker.com/r/prestashop/prestashop/
+  prestashop:
+    container_name: $PS_CONTAINER_NAME
+    image: $PS_IMAGE:$PS_IMAGE_TAG
+    restart: $PS_RESTART_POLICY
+    networks:
+      - $PS_NETWORK_NAME
+    ports:
+      - $PS_CONTAINER_PORT:$PS_HOST_PORT
+    links:
+      - mariadb:mariadb
+    depends_on:
+      - mariadb
+    volumes:
+      - ./ps_data:/var/www/html
+      - ./ps_data/modules:/var/www/html/modules
+      - ./ps_data/themes:/var/www/html/themes
+      - ./ps_data/override:/var/www/html/override
+    environment:
+      - PS_DEV_MODE=$PS_DEV_MODE
+      - DB_NAME=$DB_NAME
+      - DB_SERVER=$DB_SERVER
+      - DB_USER=$DB_USER
+      - DB_PASSWD=$DB_PASSWD
+      - PS_FOLDER_ADMIN=$PS_FOLDER_ADMIN
+      - PS_FOLDER_INSTALL=$PS_FOLDER_INSTALL
+
+  # SOURCE : https://hub.docker.com/_/mariadb
+  mariadb:
+    container_name: $DB_CONTAINER_NAME
+    image: $DB_IMAGE:$DB_IMAGE_TAG
+    restart: $DB_RESTART_POLICY
+    networks:
+      - $PS_NETWORK_NAME
+    volumes:
+      - ./db_data:/var/lib/mysql
+    environment:
+      - MYSQL_DATABASE=$MYSQL_DATABASE
+      - MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD
+
+  # SOURCE : https://hub.docker.com/_/phpmyadmin
+  phpmyadmin:
+    container_name: $PMA_CONTAINER_NAME
+    image: $PMA_IMAGE:$PMA_IMAGE_TAG
+    restart: $PMA_RESTART_POLICY
+    networks:
+      - $PS_NETWORK_NAME
+    links:
+      - mariadb:mariadb
+    ports:
+      - $PMA_CONTAINER_PORT:$PMA_HOST_PORT
+    depends_on:
+      - mariadb
+    environment:
+      - PMA_HOST=$PMA_HOST
+      - PMA_USER=$PMA_USER
+      - PMA_PASSWORD=$PMA_PASSWORD
+
+networks:
+  prestashop:
+    name: $PS_NETWORK_NAME
+
+volumes:
+  db_data:
+  ps_data:
