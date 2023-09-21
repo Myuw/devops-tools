@@ -1,14 +1,16 @@
 version: "3.9"
+
 services:
   # SOURCE : https://hub.docker.com/r/prestashop/prestashop/
   prestashop:
-    container_name: $PS_CONTAINER_NAME
-    image: $PS_IMAGE:$PS_IMAGE_TAG
-    restart: $PS_RESTART_POLICY
+    container_name: ${PS_CONTAINER_NAME}
+    image: ${PS_IMAGE}:${PS_IMAGE_TAG}
+    restart: ${PS_RESTART_POLICY}
     networks:
-      - $PS_NETWORK_NAME
-    ports:
-      - $PS_CONTAINER_PORT:$PS_HOST_PORT
+      - ${PS_NETWORK_NAME}
+      - ${TRAEFIK_NETWORK_NAME}
+    # ports:
+    #   - $PS_CONTAINER_PORT:$PS_HOST_PORT
     links:
       - mariadb:mariadb
     depends_on:
@@ -19,48 +21,94 @@ services:
       - ./ps_data/themes:/var/www/html/themes
       - ./ps_data/override:/var/www/html/override
     environment:
-      - PS_DEV_MODE=$PS_DEV_MODE
-      - DB_NAME=$DB_NAME
-      - DB_SERVER=$DB_SERVER
-      - DB_USER=$DB_USER
-      - DB_PASSWD=$DB_PASSWD
-      - PS_FOLDER_ADMIN=$PS_FOLDER_ADMIN
-      - PS_FOLDER_INSTALL=$PS_FOLDER_INSTALL
+      - PS_DEV_MODE=${PS_DEV_MODE}
+      - DB_NAME=${DB_NAME}
+      - DB_SERVER=${DB_SERVER}
+      - DB_USER=${DB_USER}
+      - DB_PASSWD=${DB_PASSWD}
+      - PS_FOLDER_ADMIN=${PS_FOLDER_ADMIN}
+      - PS_FOLDER_INSTALL=${PS_FOLDER_INSTALL}
+    labels:
+      # General traefik settings
+      - "traefik.enable=true" # <== Enabling traefik to manage this container
+      - "traefik.docker.network=${TRAEFIK_NETWORK_NAME}" # <== The network traefik will operate on the docker network named traefik-net
+      # HTTP to HTTPS settings
+      - "traefik.http.routers.ps-secure.entrypoints=websecure" # <== The entrypoint HTTPS
+      - "traefik.http.routers.ps-secure.rule=Host(`${DOMAIN_NAME}`)" # <== The rule to match the request
+      # Let's Encrypt settings
+      - "traefik.http.routers.ps-secure.tls=true" # Enable TLS
+      - "traefik.http.routers.ps-secure.tls.certresolver=lets-encrypt" # <== The certificate resolver to use
+      # # Create middleware
+      # - "traefik.http.routers.ps-secure.middlewares=ps-compress" # Create traefik-compress middleware
+      # - "traefik.http.routers.ps-secure.middlewares=ps-header" # Create traefik-header middleware
+      # Traefik compress settings
+      - "traefik.http.middlewares.ps-compress.compress=true" # <== Enable compression
+      # Traefik header settings
+      ## SSL settings
+      - "traefik.http.middlewares.ps-header.headers.sslRedirect=true" # <== Enabling SSL redirection
+      ## STS settings
+      - "traefik.http.middlewares.ps-header.headers.stsSeconds=31536000" # <== Setting STS seconds
+      - "traefik.http.middlewares.ps-header.headers.stsIncludeSubdomains=true" # <== Enabling STS include subdomain
+      - "traefik.http.middlewares.ps-header.headers.stsPreload=true" # <== Enabling STS preload
+      - "traefik.http.middlewares.ps-header.headers.forceSTSHeader=true" # <== Enabling force STS header
+      ## Security settings
+      - "traefik.http.middlewares.ps-header.headers.framedeny=true" # <== Preventing clickjacking
+      - "traefik.http.middlewares.ps-header.headers.browserxssfilter=true" # <== Preventing XSS
+      # - "traefik.http.middlewares.ps-header.headers.contentTypeNosniff=true" # <== Preventing MIME sniffing
+      - "traefik.http.middlewares.ps-header.headers.referrerPolicy=same-origin" # <== Preventing Referrer leakage
+      ## Cache settings
+      - "traefik.http.middlewares.ps-header.plugin.httpCache.maxTtl=300" # <== Setting the max TTL time
+      - "traefik.http.middlewares.ps-header.plugin.httpCache.maxAge=300" # <== Setting the max age time
+      - "traefik.http.middlewares.ps-header.plugin.httpCache.maxStale=300" # <== Setting the max stale time
+      - "traefik.http.middlewares.ps-header.plugin.httpCache.minFresh=300" # <== Setting the min fresh time
+      - "traefik.http.middlewares.ps-header.plugin.httpCache.sharedMaxAge=300" # <== Setting the shared max age time
+      - "traefik.http.middlewares.ps-header.plugin.httpCache.noCache=false" # <== Enabling cache
+      - "traefik.http.middlewares.ps-header.plugin.httpCache.noStore=false" # <== Enabling store
+      - "traefik.http.middlewares.ps-header.plugin.httpCache.noTransform=false" # <== Enabling transform
+      - "traefik.http.middlewares.ps-header.plugin.httpCache.mustRevalidate=true" # <== Enabling revalidation
+      - "traefik.http.middlewares.ps-header.plugin.httpCache.proxyRevalidate=true" # <== Enabling proxy revalidation
+      # Traefik loadbalancer settings
+      - "traefik.http.services.ps-secure.loadbalancer.server.port=${PS_CONTAINER_PORT}" # <== The port to use
+      # Traefik basic auth settings
+      - "traefik.http.middlewares.ps-auth.basicauth.users=${BASIC_AUTH_USR}:${BASIC_AUTH_PWD}" # <== Enabling basic auth
 
   # SOURCE : https://hub.docker.com/_/mariadb
   mariadb:
-    container_name: $DB_CONTAINER_NAME
-    image: $DB_IMAGE:$DB_IMAGE_TAG
-    restart: $DB_RESTART_POLICY
+    container_name: ${DB_CONTAINER_NAME}
+    image: ${DB_IMAGE}:${DB_IMAGE_TAG}
+    restart: ${DB_RESTART_POLICY}
     networks:
-      - $PS_NETWORK_NAME
+      - ${PS_NETWORK_NAME}
     volumes:
       - ./db_data:/var/lib/mysql
     environment:
-      - MYSQL_DATABASE=$MYSQL_DATABASE
-      - MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
 
   # SOURCE : https://hub.docker.com/_/phpmyadmin
-  phpmyadmin:
-    container_name: $PMA_CONTAINER_NAME
-    image: $PMA_IMAGE:$PMA_IMAGE_TAG
-    restart: $PMA_RESTART_POLICY
-    networks:
-      - $PS_NETWORK_NAME
-    links:
-      - mariadb:mariadb
-    ports:
-      - $PMA_CONTAINER_PORT:$PMA_HOST_PORT
-    depends_on:
-      - mariadb
-    environment:
-      - PMA_HOST=$PMA_HOST
-      - PMA_USER=$PMA_USER
-      - PMA_PASSWORD=$PMA_PASSWORD
+  # phpmyadmin:
+  #   container_name: ${PMA_CONTAINER_NAME}
+  #   image: ${PMA_IMAGE}:${PMA_IMAGE_TAG}
+  #   restart: ${PMA_RESTART_POLICY}
+  #   networks:
+  #     - ${PS_NETWORK_NAME}
+  #   links:
+  #     - mariadb:mariadb
+  #   ports:
+  #     - ${PMA_CONTAINER_PORT}:${PMA_HOST_PORT}
+  #   depends_on:
+  #     - mariadb
+  #   environment:
+  #     - PMA_HOST=${PMA_HOST}
+  #     - PMA_USER=${PMA_USER}
+  #     - PMA_PASSWORD=${PMA_PASSWORD}
 
 networks:
   prestashop:
     name: $PS_NETWORK_NAME
+  traefik-net:
+      name: ${TRAEFIK_NETWORK_NAME}
+      external: true
 
 volumes:
   db_data:
