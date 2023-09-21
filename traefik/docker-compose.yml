@@ -1,0 +1,88 @@
+version: "3.3"
+
+services:
+  traefik:
+    image: ${IMAGE_NAME}:${IMAGE_TAG}
+    container_name: ${CONTAINER_NAME}
+    networks:
+      - ${TRAEFIK_NETWORK_NAME}
+    command:
+      # Entrypoints Settings
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      # Global HTTP to HTTPS redirection
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      # Let's Encrypt Certificate Settings
+      - --certificatesresolvers.lets-encrypt.acme.tlschallenge=true # <== Enable TLS-ALPN-01 to generate and renew ACME certs
+      - --certificatesresolvers.lets-encrypt.acme.email=${ACME_CHALLENGE_EMAIL} # <== Setting email for certs
+      - --certificatesresolvers.lets-encrypt.acme.storage=/letsencrypt/acme.json # <== Defining acme file to store cert information
+      - --certificatesresolvers.lets-encrypt.acme.caserver=${ACME_CASERVER}
+      # API Settings
+      - --api.dashboard=true # <== Enabling the dashboard to view services, middlewares, routers, etc...
+      - --api.debug=true # <== Enabling additional endpoints for debugging and profiling
+      ## Log Settings (options: ERROR, DEBUG, PANIC, FATAL, WARN, INFO) - https://docs.traefik.io/observability/logs/ ##
+      - --log.level=INFO # <== Setting the level of the logs from traefik
+      ## Provider Settings - https://docs.traefik.io/providers/docker/#provider-configuration ##
+      - --providers.docker=true # <== Enabling docker as the provider for traefik
+      - --providers.docker.exposedbydefault=false # <== Don't expose every container to traefik, only expose enabled ones
+      - --providers.docker.network=${TRAEFIK_NETWORK_NAME} # <== Operate on the docker network named web
+      - --providers.file.filename=/traefik/dynamic.yml # <== Referring to a dynamic configuration file
+      - --providers.file.watch=true # <== Enabling the watch feature
+    # Enable Traefik to listen to the docker socket
+    labels:
+      # General traefik settings
+      - "traefik.enable=true" # <== Enabling traefik to manage this container
+      - "traefik.docker.network=${TRAEFIK_NETWORK_NAME}" # <== The network traefik will operate on the docker network named traefik-net
+      - "traefik.http.routers.traefik-secure.service=api@internal" # <== Setting the service to the internal api
+      # HTTP to HTTPS settings
+      - "traefik.http.routers.traefik-secure.entrypoints=websecure" # <== The entrypoint HTTPS
+      - "traefik.http.routers.traefik-secure.rule=Host(`${SUBDOMAIN}.${DOMAIN_NAME}`)" # <== The rule to match the request
+      # Let's Encrypt settings
+      - "traefik.http.routers.traefik-secure.tls=true" # Enable TLS
+      - "traefik.http.routers.traefik-secure.tls.certresolver=lets-encrypt" # <== The certificate resolver to use
+      # # Create middleware
+      # - "traefik.http.routers.traefik-compress.middlewares=traefik-compress" # Create traefik-compress, traefik-header middleware
+      # - "traefik.http.routers.traefik-header.middlewares=traefik-header" # Create traefik-compress, traefik-header middleware
+      # Traefik compress settings
+      - "traefik.http.middlewares.traefik-compress.compress=true" # <== Enable compression
+      # Traefik header settings
+      ## SSL settings
+      - "traefik.http.middlewares.traefik-header.headers.sslRedirect=true" # <== Enabling SSL redirection
+      ## STS settings
+      - "traefik.http.middlewares.traefik-header.headers.stsSeconds=315360000" # <== Enabling HSTS
+      - "traefik.http.middlewares.traefik-header.headers.stsIncludeSubdomains=true" # <== Enabling HSTS
+      - "traefik.http.middlewares.traefik-header.headers.stsPreload=true" # <== Enabling HSTS
+      - "traefik.http.middlewares.traefik-header.headers.forceSTSHeader=true" # <== Enabling HSTS
+      ## Security settings
+      - "traefik.http.middlewares.traefik-header.headers.framedeny=true" # <== Preventing clickjacking
+      - "traefik.http.middlewares.traefik-header.headers.browserxssfilter=true" # <== Preventing XSS
+      - "traefik.http.middlewares.traefik-header.headers.contentTypeNosniff=true" # <== Preventing MIME sniffing
+      - "traefik.http.middlewares.traefik-header.headers.referrerPolicy=same-origin" # <== Preventing Referrer leakage
+      ## Cache settings
+      - "traefik.http.middlewares.traefik-header.plugin.httpCache.maxTtl=300" # <== Setting the max TTL time
+      - "traefik.http.middlewares.traefik-header.plugin.httpCache.maxAge=300" # <== Setting the max age time
+      - "traefik.http.middlewares.traefik-header.plugin.httpCache.maxStale=300" # <== Setting the max stale time
+      - "traefik.http.middlewares.traefik-header.plugin.httpCache.minFresh=300" # <== Setting the min fresh time
+      - "traefik.http.middlewares.traefik-header.plugin.httpCache.sharedMaxAge=300" # <== Setting the shared max age time
+      - "traefik.http.middlewares.traefik-header.plugin.httpCache.noCache=true" # <== Enabling cache
+      - "traefik.http.middlewares.traefik-header.plugin.httpCache.noStore=true" # <== Enabling store
+      - "traefik.http.middlewares.traefik-header.plugin.httpCache.noTransform=true" # <== Enabling transform
+      - "traefik.http.middlewares.traefik-header.plugin.httpCache.mustRevalidate=true" # <== Enabling revalidation
+      - "traefik.http.middlewares.traefik-header.plugin.httpCache.proxyRevalidate=true" # <== Enabling proxy revalidation
+      # Traefik loadbalancer settings
+      - "traefik.http.services.traefik-secure.loadbalancer.server.port=443" # <== The port to use
+      # # Traefik basic auth settings
+      # - "traefik.http.middlewares.traefik-auth.basicauth.users=${BASIC_AUTH_USR}:${BASIC_AUTH_PWD}" # <== Enabling basic auth
+    ports:
+      - 80:80 # <== Exposing port 80
+      - 443:443 # <== Exposing port 443
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro # <== Mounting the docker socket
+      - ./letsencrypt:/letsencrypt # <== Mounting the letsencrypt folder
+      - ./conf/config.yml:/traefik/dynamic.yml # <== Volume for dynamic conf file
+
+networks:
+  traefik-net:
+    name: ${TRAEFIK_NETWORK_NAME}
+    driver: 'bridge'
