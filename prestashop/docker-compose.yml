@@ -68,7 +68,7 @@ services:
       - "traefik.http.middlewares.ps-header.plugin.httpCache.mustRevalidate=true" # <== Enabling revalidation
       - "traefik.http.middlewares.ps-header.plugin.httpCache.proxyRevalidate=true" # <== Enabling proxy revalidation
       # Traefik loadbalancer settings
-      - "traefik.http.services.ps-secure.loadbalancer.server.port=${PS_CONTAINER_PORT}" # <== The port to use
+      - "traefik.http.services.ps-secure.loadbalancer.server.port=${PS_HOST_PORT}" # <== The port to use
       # Traefik basic auth settings
       - "traefik.http.middlewares.ps-auth.basicauth.users=${BASIC_AUTH_USR}:${BASIC_AUTH_PWD}" # <== Enabling basic auth
 

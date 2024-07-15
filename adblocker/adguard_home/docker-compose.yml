@@ -1,0 +1,11 @@
+services:
+  adguardhome_svc:
+    image: adguard/adguardhome:v0.107.52
+    container_name: adguardhome_ctn
+    restart: unless-stopped
+    volumes:
+        - ./work:/opt/adguardhome/work
+        - ./conf:/opt/adguardhome/conf
+    ports:
+        - 53:53/tcp
+        - 53:53/udp
