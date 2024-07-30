@@ -105,7 +105,7 @@ services:
 
 networks:
   prestashop:
-    name: $PS_NETWORK_NAME
+    name: ${PS_NETWORK_NAME}
   traefik-net:
       name: ${TRAEFIK_NETWORK_NAME}
       external: true
