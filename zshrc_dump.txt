@@ -1,0 +1,126 @@
+# Alias
+
+## Global
+alias v="vim"
+alias bat="batcat"
+alias c="clear"
+alias update="sudo apt-get update -y"
+alias upgrade="sudo apt-get upgrade -y"
+alias install="sudo apt-get install"
+alias autoremove="sudo apt-get autoremove"
+alias code="code ."
+alias oc="./opensee-cli"
+alias sd="init 0"
+alias reb="init 6"
+alias py="python3"
+alias eks=". ~/.eks.sh"
+
+## Wireguard
+alias wg_start="sudo systemctl start wg-quick@wg0"
+alias wg_stop="sudo systemctl stop wg-quick@wg0"
+
+## Git
+alias gst="git status"
+alias ga="git add"
+alias gc="git commit"
+alias gp="git push"
+alias gl="git log"
+alias gpl="git l"
+alias gpull="git pull"
+alias gsta="git stash"
+alias gsw="git switch"
+alias gb="git branch"
+alias gcl="git clone"
+
+## Docker
+
+alias d="docker"
+alias dps="docker ps"
+alias dst="docker stop"
+alias drm="docker rm"
+alias dimg="docker images"
+alias dlo="docker logs -f"
+alias dbu="docker build"
+alias dr="docker run"
+alias dcc="docker system prune -af; docker volume prune -af"
+alias dc="docker-compose"
+alias dcup="docker-compose up"
+alias dcupd="docker-compose up -d"
+alias dcd="docker-compose down"
+alias dclo="docker-compose logs -f"
+alias dcbu="docker-compose build"
+
+## K8S
+
+alias k="kubectl"
+alias kv"kubectl version"
+alias kg="kubectl get"
+alias kgp="kubectl get pods"
+alias kgd="kubectl get deploy"
+alias kgs="kubectl get svc"
+alias kgi="kubectl get ingress"
+alias kgn="kubectl get nodes"
+alias kgns="kubectl get ns"
+alias kgcm="kubectl get cm"
+alias kgsct="kubectl get secret"
+alias kgsc="kubectl get sc"
+alias kl="kubectl logs -f"
+alias ka="kubectl apply"
+alias kaf="kubectl apply -f"
+alias kdel="kubectl delete"
+alias kdelf="kubectl delete -f"
+alias kd="kubectl describe"
+alias kex="kubectl exec -it"
+alias kpf="kubectl port-forward"
+alias ked="kubectl edit"
+
+alias krunalp="kubectl run alpine --image alpine --namespace opensee-chouse-install --restart=Never sleep infinity"
+alias kexalp="kubectl exec -it -n opensee-chouse-install alpine -- sh"
+
+alias kgpnks="kubectl get pods --field-selector=metadata.namespace!=kube-system -A -o wide"
+alias kgpw="watch -n1 kubectl get pods -A --field-selector=metadata.namespace!=kube-system -o wide"
+
+alias kdpn="kubectl describe po -n"
+
+alias kx='kubectx'
+alias kn='kubens'
+
+export now='--force --grace-period=0'
+
+[[ $commands[kubectl] ]] && source <(kubectl completion zsh)
+
+## Terraform
+alias tf="terraform"
+alias tfg="terraform graph"
+alias tfp="terraform plan"
+alias tfi="terraform init"
+alias tfa="terraform apply"
+alias tff="terraform fmt"
+alias tfv="terraform validate"
+alias tfd="terraform destroy"
+alias tfwl="terraform workspace list"
+alias tfwn="terraform workspace new"
+alias tfws="terraform workspace select"
+alias tfwd="terraform workspace delete"
+
+autoload -U +X bashcompinit && bashcompinit
+complete -o nospace -C /usr/bin/terraform terraform
+
+# Cowsay
+NBRE_COWS=$(ls -1 /usr/share/cowsay/cows/ | wc -l)
+COWS_RANDOM=$(expr $RANDOM % $NBRE_COWS + 1)
+COW_NAME=$(ls -1 /usr/share/cowsay/cows/ | awk -F\. -v COWS_RANDOM_AWK=$COWS_RANDOM 'NR == COWS_RANDOM_AWK {print $1}')
+cowsay -f $COW_NAME "`fortune -s`" | lolcat
+
+PATH="$PATH:/home/USER/.local/bin"
+
+# GCP env
+
+# AWS Env
+
+# OCS
+alias ocs="python3 ocs.py"
+
+# Gitlab 2FA
+alias totp="totp AJCCBP65QYVFV44IXMZTVC5UTNV25XUV"
+
