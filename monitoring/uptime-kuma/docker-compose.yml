@@ -1,0 +1,62 @@
+version: '3.3'
+
+networks:
+  traefik-net:
+    name: ${TRAEFIK_NETWORK_NAME}
+    external: true
+
+services:
+  uptime-kuma:
+    image: ${IMAGE_NAME}:${IMAGE_TAG}
+    container_name: ${CONTAINER_NAME}
+    volumes:
+      - ./uptime-kuma-data:/app/data
+    restart: ${RESTART_POLICY}
+    networks:
+      - traefik-net
+    # Uncomment the following line if you want to use in a local environment
+    # ports:
+    #   - 3001:3001
+    # Enable Traefik to listen to the docker socket
+    labels:
+      # General traefik settings
+      - "traefik.enable=true" # <== Enabling traefik to manage this container
+      - "traefik.docker.network=${TRAEFIK_NETWORK_NAME}" # <== The network traefik will operate on the docker network named traefik-net
+      # HTTP to HTTPS settings
+      - "traefik.http.routers.kuma-secure.entrypoints=websecure" # <== The entrypoint HTTPS
+      - "traefik.http.routers.kuma-secure.rule=Host(`${SUBDOMAIN}.${DOMAIN_NAME}`)" # <== The rule to match the request
+      # Let's Encrypt settings
+      - "traefik.http.routers.kuma-secure.tls=true" # Enable TLS
+      - "traefik.http.routers.kuma-secure.tls.certresolver=lets-encrypt" # <== The certificate resolver to use
+      # # Create middleware
+      # - "traefik.http.routers.kuma-secure.middlewares=kuma-compress" # Create traefik-compress middleware
+      # - "traefik.http.routers.kuma-secure.middlewares=kuma-header" # Create traefik-header middleware
+      # Traefik compress settings
+      - "traefik.http.middlewares.kuma-compress.compress=true" # <== Enable compression
+      # Traefik header settings
+      ## SSL settings
+      - "traefik.http.middlewares.kuma-header.headers.sslRedirect=true" # <== Enabling SSL redirection
+      ## STS settings
+      - "traefik.http.middlewares.kuma-header.headers.stsSeconds=31536000" # <== Setting STS seconds
+      - "traefik.http.middlewares.kuma-header.headers.stsIncludeSubdomains=true" # <== Enabling STS include subdomain
+      - "traefik.http.middlewares.kuma-header.headers.stsPreload=true" # <== Enabling STS preload
+      - "traefik.http.middlewares.kuma-header.headers.forceSTSHeader=true" # <== Enabling force STS header
+      ## Security settings
+      - "traefik.http.middlewares.kuma-header.headers.framedeny=true" # <== Preventing clickjacking
+      - "traefik.http.middlewares.kuma-header.headers.browserxssfilter=true" # <== Preventing XSS
+      - "traefik.http.middlewares.kuma-header.headers.referrerPolicy=same-origin" # <== Preventing Referrer leakage
+      ## Cache settings
+      - "traefik.http.middlewares.kuma-header.plugin.httpCache.maxTtl=300" # <== Setting the max TTL time
+      - "traefik.http.middlewares.kuma-header.plugin.httpCache.maxAge=300" # <== Setting the max age time
+      - "traefik.http.middlewares.kuma-header.plugin.httpCache.maxStale=300" # <== Setting the max stale time
+      - "traefik.http.middlewares.kuma-header.plugin.httpCache.minFresh=300" # <== Setting the min fresh time
+      - "traefik.http.middlewares.kuma-header.plugin.httpCache.sharedMaxAge=300" # <== Setting the shared max age time
+      - "traefik.http.middlewares.kuma-header.plugin.httpCache.noCache=false" # <== Enabling cache
+      - "traefik.http.middlewares.kuma-header.plugin.httpCache.noStore=false" # <== Enabling store
+      - "traefik.http.middlewares.kuma-header.plugin.httpCache.noTransform=false" # <== Enabling transform
+      - "traefik.http.middlewares.kuma-header.plugin.httpCache.mustRevalidate=true" # <== Enabling revalidation
+      - "traefik.http.middlewares.kuma-header.plugin.httpCache.proxyRevalidate=true" # <== Enabling proxy revalidation
+      # Traefik loadbalancer settings
+      - "traefik.http.services.kuma-secure.loadbalancer.server.port=3001" # <== The port to use
+      # Traefik basic auth settings
+      # - "traefik.http.middlewares.kuma-auth.basicauth.users=${BASIC_AUTH_USR}:${BASIC_AUTH_PWD}" # <== Enabling basic auth
