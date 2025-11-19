@@ -70,9 +70,18 @@ ZSH_THEME="robbyrussell"
 # Custom plugins may be added to $ZSH_CUSTOM/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
-plugins=(git zsh-autosuggestions)
+plugins=(
+	git
+	zsh-autosuggestions
+	kube-ps1
+	direnv
+)
 
 source $ZSH/oh-my-zsh.sh
+
+# https://github.com/jonmosco/kube-ps1
+# Line needed for kube-ps1
+PROMPT='$(kube_ps1)'$PROMPT
 
 # User configuration
 
@@ -100,7 +109,7 @@ source $ZSH/oh-my-zsh.sh
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
-export PATH="/home/kiome/go/bin:$PATH"
+# export PATH="/home/kiome/go/bin:$PATH"
 
 # Alias
 
@@ -116,11 +125,6 @@ alias code="code ."
 alias sd="init 0"
 alias reb="init 6"
 
-## Opensee
-alias oc="./opensee-cli"
-alias osbin="~/.os_bin.sh"
-alias osk8s="~/.os_k8s.sh"
-
 ## AWS
 alias eks=". ~/.eks.sh"
 
@@ -129,6 +133,7 @@ alias wg_start="sudo systemctl start wg-quick@wg0"
 alias wg_stop="sudo systemctl stop wg-quick@wg0"
 
 ## Git
+
 alias gst="git status"
 alias ga="git add"
 alias gc="git commit"
@@ -140,6 +145,8 @@ alias gsta="git stash"
 alias gsw="git switch"
 alias gb="git branch"
 alias gcl="git clone"
+alias gt="git tag"
+alias gpb="git push --set-upstream origin"
 
 ## Docker
 
@@ -182,23 +189,29 @@ alias kd="kubectl describe"
 alias kex="kubectl exec -it"
 alias kpf="kubectl port-forward"
 alias ked="kubectl edit"
+alias kga="kubectl get all -n"
+alias kge="kg events --sort-by='.lastTimestamp'"
 
-alias krunalp="kubectl run alpine --image alpine --namespace opensee-chouse-install --restart=Never sleep infinity"
-alias kexalp="kubectl exec -it -n opensee-chouse-install alpine -- sh"
+alias krunalp="kubectl run alpine --image=alpine:3.22.0 --restart=Never --command -- sleep infinity"
+alias krunalpchouse="kubectl run alpine -n opensee-chouse-install --image=alpine:3.20.3 --restart=Never --command -- sleep infinity"
+alias krunalpmong="kubectl run alpine --image=alpine/mongosh:2.0.2 --restart=Never --command -- sleep infinity"
+alias kexalp="kubectl exec -it alpine -- sh"
+alias kexalpchouse="kubectl exec -n opensee-chouse-install -it alpine -- sh"
 
 alias kgpnks="kubectl get pods --field-selector=metadata.namespace!=kube-system -A -o wide"
 alias kgpw="watch -n1 kubectl get pods -A --field-selector=metadata.namespace!=kube-system -o wide"
 
-alias kdpn="kubectl describe po -n"
+alias kgan="kubectl api-resources --verbs=list --namespaced -o name | xargs -n 1 kubectl get --show-kind --ignore-not-found -n"
 
 alias kx="kubectx"
 alias kxu="kubectx -u"
 alias kn="kubens"
 
+alias katn="kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml"
+alias ktn="kubectl top nodes"
+
 ## Python
 alias py="python3"
-
-export now='--force --grace-period=0'
 
 [[ $commands[kubectl] ]] && source <(kubectl completion zsh)
 
@@ -227,13 +240,29 @@ cowsay -f $COW_NAME "`fortune -s`" | lolcat
 
 PATH="$PATH:/home/USER/.local/bin"
 
-# GCP env
-
-# AWS Env
-
-# OCS
-
 # Gitlab 2FA
+alias totp="totp xxx"
 
-# Search all pwd in the switch 
+# Cursor IDE
+function cursor {
+	(nohup /opt/cursor.appimage "$@" > /dev/null 2>&1 &)
+}
+alias cursor="cursor ."
+
+# Search all pwd in the switch
 # tcpdump port http or port ftp or port smtp or port imap or port pop3 or port telnet -l -A | egrep -i -B5 'pass=|pwd=|log=|login=|user=|username=|pw=|passw=|passwd=|password=|pass:|user:|username:|password:|login:|pass |user '
+
+# FZF
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+
+# Claude
+export AWS_ACCESS_KEY_ID=xxx
+export AWS_SECRET_ACCESS_KEY=xxx
+export CLAUDE_CODE_USE_BEDROCK=1
+export AWS_REGION=eu-west-3
+export ANTHROPIC_MODEL='eu.anthropic.claude-sonnet-4-20250514-v1:0'
+export ANTHROPIC_SMALL_FAST_MODEL_AWS_REGION=eu-west-3
+export ANTHROPIC_SMALL_FAST_MODEL='anthropic.claude-3-haiku-20240307-v1:0'
+
+# Stop IPv6 leak
+alias stopipv6='sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1; sudo sysctl -w net.ipv6.conf.default.disable_ipv6=1'
