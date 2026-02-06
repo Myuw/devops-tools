@@ -1,6 +1,6 @@
 services:
   app:
-    image: fireflyiii/core:latest
+    image: fireflyiii/core:version-6.4.16
     hostname: app
     container_name: firefly_iii_core
     restart: unless-stopped
@@ -28,7 +28,7 @@ services:
     # To make this work, set STATIC_CRON_TOKEN in your .env file or as an environment variable and replace PLEASE_REPLACE_WITH_32_CHAR_CODE below
     # The STATIC_CRON_TOKEN must be *exactly* 32 characters long
     #
-    image: alpine
+    image: alpine:3.23.3
     restart: unless-stopped
     container_name: firefly_iii_cron
     env_file: .env
