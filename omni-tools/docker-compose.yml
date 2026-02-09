@@ -1,7 +1,7 @@
 services:
-  omni-tools:
-    image: iib0011/omni-tools:0.4
-    container_name: omni-tools
+  omni_tools_svc:
+    image: iib0011/omni-tools:0.6
+    container_name: omni-tools_ctn
     restart: unless-stopped
     ports:
       - "8080:80"
