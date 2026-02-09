@@ -1,0 +1,18 @@
+services:
+  freshrss_svc:
+    image: freshrss/freshrss:1.28.1
+    container_name: freshrss_ctn
+    hostname: freshrss
+    restart: unless-stopped
+    ports:
+      - "${PUBLISHED_PORT:-8080}:${LISTEN:-80}"
+    logging:
+      options:
+        max-size: 10m
+    volumes:
+      - ./data:/var/www/FreshRSS/data
+      - ./extensions:/var/www/FreshRSS/extensions
+    environment:
+      TZ: Europe/Paris
+      CRON_MIN: '2,32'
+      TRUSTED_PROXY: 172.16.0.1/12 192.168.0.1/16
