@@ -1,0 +1,7 @@
+services:
+  it_tools_svc:
+    image: corentinth/it-tools:2024.10.22-7ca5933
+    container_name: it_tools_ctn
+    restart: unless-stopped
+    ports:
+      - 8080:80
